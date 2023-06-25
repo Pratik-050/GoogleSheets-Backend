@@ -1,36 +1,27 @@
-const userDB = {
-  users: require("../model/users.json"),
-  setUsers: function (data) {
-    this.users = data;
-  },
-};
+const User = require("../model/user");
 
-const fsPromises = require("fs").promises;
-const path = require("path");
 const bcrypt = require("bcrypt");
 
 const handleNewUser = async (req, res) => {
   const { user, pwd } = req.body;
   if (!user || !pwd)
     return res.status(402).json({ message: "username or password missing." });
-  const duplicate = userDB.users.find((person) => person.username === user);
-  if (duplicate) return res.status(409);
 
   try {
+    const existingUser = await User.findOne({ username: user });
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists." });
+    }
+
     const hashedPwd = await bcrypt.hash(pwd, 10);
-    const newUser = {
+    const newUser = new User({
       username: user,
       password: hashedPwd,
-    };
-    userDB.setUsers([...userDB.users, newUser]);
-
-    await fsPromises.writeFile(
-      path.join(__dirname, "..", "model", "users.json"),
-      JSON.stringify(userDB.users)
-    );
-    res.send(userDB.users);
+    });
+    await newUser.save();
+    res.status(200).json({ message: "User registered successfully" });
   } catch (err) {
-    res.status(500).json({ messsage: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 

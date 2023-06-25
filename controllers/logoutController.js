@@ -1,37 +1,30 @@
-const userDB = {
-  users: require("../model/users.json"),
-  setUsers: function (data) {
-    this.users = data;
-  },
-};
-require("dotenv").config();
-const path = require("path");
-const fsPromises = require("fs").promises;
+const User = require("../model/user");
 
-const handleLogout = (req, res) => {
+require("dotenv").config();
+
+const handleLogout = async (req, res) => {
   const cookies = req.cookies;
   if (!cookies?.jwt) return res.sendStatus(204);
   const refreshToken = cookies.jwt;
-  const foundUser = userDB.users.find(
-    (person) => person.refreshToken === refreshToken
-  );
-  if (!foundUser) {
+
+  try {
+    const foundUser = await User.findOne({
+      refreshToken: refreshToken,
+    });
+
+    if (!foundUser) {
+      res.clearCookie("jwt", { httpOnly: true, maxAge: 60 * 60 * 1000 });
+      return res.sendStatus(204);
+    }
+
+    foundUser.refreshToken = "";
+    await foundUser.save();
+
     res.clearCookie("jwt", { httpOnly: true, maxAge: 60 * 60 * 1000 });
-    return res.sendStatus(204);
+    res.sendStatus(204);
+  } catch (err) {
+    res.sendStatus(500);
   }
-  const otherUsers = userDB.users.filter(
-    (person) => person.refreshToken !== foundUser.refreshToken
-  );
-  const currentUser = { ...foundUser, refreshToken: "" };
-  userDB.setUsers([...otherUsers, currentUser]);
-
-  fsPromises.writeFile(
-    path.join(__dirname, "..", "model", "users.json"),
-    JSON.stringify(userDB.users)
-  );
-
-  res.clearCookie("jwt", { httpOnly: true, maxAge: 60 * 60 * 1000 });
-  res.sendStatus(204);
 };
 
 module.exports = handleLogout;
