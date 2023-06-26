@@ -32,7 +32,10 @@ const handleLogin = async (req, res) => {
         httpOnly: true,
         maxAge: 60 * 60 * 1000,
       });
-      res.status(200).json({ message: "loggedin successfully" }).end();
+      res
+        .status(200)
+        .json({ idToken: accessToken, email: foundUser.username })
+        .end();
     } else {
       res.sendStatus(401);
     }

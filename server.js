@@ -10,7 +10,11 @@ require("dotenv").config();
 const connectDB = require("./model/connectdb");
 
 //cross origin resource sharing
-const whiteList = ["http://localhost:3500"];
+const whiteList = [
+  "http://localhost:3500",
+  "https://google-sheets-frontend-teal.vercel.app",
+  "http://localhost:3000",
+];
 const corsOptions = {
   origin: (origin, callback) => {
     if (whiteList.indexOf(origin) !== -1 || !origin) {
