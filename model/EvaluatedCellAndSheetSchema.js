@@ -12,7 +12,7 @@ const EvaluatedCellSchema = new mongoose.Schema({
   sheet: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Sheet",
-    required: true,
+    // required: true,
   },
 });
 

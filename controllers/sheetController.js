@@ -8,20 +8,31 @@ const evaluatedCellHandler = async (req, res) => {
     const { sheetId } = req.params;
     const { cellId, value } = req.body;
 
-    const evaluatedCell = new EvaluatedCell({
-      cellId,
-      value,
-      sheet: sheetId,
-    });
+    const sheet = await Sheet.findById(sheetId);
+    if (!sheet) {
+      return res.status(404).json({ message: "Sheet not found" });
+    }
+
+    let evaluatedCell = await EvaluatedCell.findOne({ sheet: sheetId, cellId });
+    if (evaluatedCell) {
+      // Update the existing evaluated cell's value
+      evaluatedCell.value = value;
+    } else {
+      evaluatedCell = new EvaluatedCell({
+        cellId,
+        value,
+        sheet: sheetId,
+      });
+    }
 
     await evaluatedCell.save();
 
-    // Add the evaluated cell to the sheet's cells array
-    const sheet = await Sheet.findByIdAndUpdate(
-      sheetId,
-      { $push: { cells: evaluatedCell._id } },
-      { new: true }
-    );
+    if (!sheet.cells.includes(evaluatedCell._id)) {
+      sheet.cells.push(evaluatedCell._id);
+    }
+
+    // sheet.cells.push(evaluatedCell._id);
+    await sheet.save();
 
     res.status(201).json({ message: "Evaluated cell saved", sheet });
   } catch (err) {
